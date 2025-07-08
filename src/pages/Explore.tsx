@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Filter, Heart, Plus, Star, CreditCard } from "lucide-react";
+import { fetchCards } from "@/lib/api-client";
+import { validateAndSanitizeSearch, categorySchema } from "@/lib/validation";
+import { useSecurity } from "@/hooks/use-security";
+import { useToast } from "@/hooks/use-toast";
 
 const Explore = () => {
   const [searchParams] = useSearchParams();
@@ -15,68 +19,66 @@ const Explore = () => {
   const [comparison, setComparison] = useState<string[]>([]);
   const [cards, setCards] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { canMakeRequest, sanitizeInput } = useSecurity();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Set category from URL params if available
     const categoryParam = searchParams.get('category');
     if (categoryParam) {
-      setSelectedCategory(categoryParam);
+      const validatedCategory = categorySchema.safeParse(categoryParam);
+      if (validatedCategory.success) {
+        setSelectedCategory(validatedCategory.data);
+      }
     }
-    fetchCards();
+    loadCards();
   }, [searchParams]);
 
   useEffect(() => {
-    fetchCards();
+    loadCards();
   }, [selectedCategory]);
 
-  const categories = [
-    "All Cards", "Shopping", "Travel", "Dining", "Fuel", "Grocery", "Utility", "Premium"
-  ];
+  const loadCards = async () => {
+    if (!canMakeRequest('explore-cards')) {
+      toast({
+        title: "Rate Limited",
+        description: "Please wait before making more requests.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const networks = ["Visa", "Mastercard", "American Express", "RuPay"];
-  const feeRanges = ["Free", "Under ₹1,000", "₹1,000-₹5,000", "₹5,000+"];
-
-  const categorySlugMap = {
-    "Shopping": "best-shopping-credit-card",
-    "Travel": "best-travel-credit-card", 
-    "Dining": "best-dining-credit-card",
-    "Fuel": "best-fuel-credit-card",
-    "Grocery": "BestCardsforGroceryShopping",
-    "Utility": "best-utility-credit-card"
-  };
-
-  const fetchCards = async () => {
     setLoading(true);
     try {
       const slug = selectedCategory && selectedCategory !== "All Cards" 
         ? categorySlugMap[selectedCategory as keyof typeof categorySlugMap] || ""
         : "";
 
-      const response = await fetch('https://bk-api.bankkaro.com/sp/api/cards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          slug,
-          banks_ids: [],
-          card_networks: [],
-          annualFees: "",
-          credit_score: "",
-          sort_by: "",
-          free_cards: "",
-          eligiblityPayload: {},
-          cardGeniusPayload: {}
-        }),
-      });
-      const data = await response.json();
-      setCards(data.cards || []);
+      const payload = {
+        slug,
+        banks_ids: [],
+        card_networks: [],
+        annualFees: "",
+        credit_score: "",
+        sort_by: "",
+        free_cards: "",
+        eligiblityPayload: {},
+        cardGeniusPayload: {}
+      };
+
+      const fetchedCards = await fetchCards(payload);
+      setCards(fetchedCards);
     } catch (error) {
-      console.error('Error fetching cards:', error);
+      console.error('Error loading cards:', error);
       setCards([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitizedValue = sanitizeInput(e.target.value);
+    const validatedValue = validateAndSanitizeSearch(sanitizedValue);
+    setSearchQuery(validatedValue);
   };
 
   const addToComparison = (cardId: string) => {
@@ -88,9 +90,12 @@ const Explore = () => {
   };
 
   const filteredCards = cards.filter(card => {
-    const matchesSearch = card.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         card.bank_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    if (!searchQuery) return true;
+    const safeCardName = card.name?.toLowerCase() || '';
+    const safeBankName = card.bank_name?.toLowerCase() || '';
+    const safeSearchQuery = searchQuery.toLowerCase();
+    
+    return safeCardName.includes(safeSearchQuery) || safeBankName.includes(safeSearchQuery);
   });
 
   return (
@@ -114,7 +119,8 @@ const Explore = () => {
               <Input
                 placeholder="Search for cards, banks, or features..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
+                maxLength={100}
                 className="pl-12 h-14 text-lg border-2 border-primary/20 focus:border-primary shadow-soft"
               />
             </div>
@@ -290,8 +296,8 @@ const Explore = () => {
                       {/* Card Info */}
                       <div className="space-y-3">
                         <div>
-                          <h3 className="font-semibold text-foreground text-lg">{card.name}</h3>
-                          <p className="text-sm text-muted-foreground">{card.bank_name}</p>
+                          <h3 className="font-semibold text-foreground text-lg">{card.name || 'Card Name'}</h3>
+                          <p className="text-sm text-muted-foreground">{card.bank_name || 'Bank Name'}</p>
                         </div>
 
                         <div className="flex items-center space-x-2">
@@ -300,12 +306,14 @@ const Explore = () => {
                             <span className="text-sm font-medium">{card.rating || '4.0'}</span>
                           </div>
                           <Badge variant="secondary" className="text-xs">
-                            {card.card_network}
+                            {card.card_network || 'Network'}
                           </Badge>
                         </div>
 
                         <div className="bg-accent/10 p-3 rounded-lg">
-                          <p className="text-sm font-medium text-accent">{card.key_features?.[0] || 'Great rewards'}</p>
+                          <p className="text-sm font-medium text-accent">
+                            {card.key_features?.[0] || 'Great rewards and benefits'}
+                          </p>
                         </div>
 
                         <div className="space-y-1">

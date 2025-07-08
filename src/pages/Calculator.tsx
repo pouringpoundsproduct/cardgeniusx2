@@ -5,6 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { Calculator, CreditCard, ArrowRight, ArrowLeft } from "lucide-react";
+import { fetchCards, fetchCalculatorResults } from "@/lib/api-client";
+import { validateSpendingValue, calculatorCategorySchema } from "@/lib/validation";
+import { useSecurity } from "@/hooks/use-security";
 import { useToast } from "@/hooks/use-toast";
 
 const CalculatorPage = () => {
@@ -15,6 +18,7 @@ const CalculatorPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const { canMakeRequest } = useSecurity();
   const { toast } = useToast();
 
   const categories = [
@@ -86,47 +90,57 @@ const CalculatorPage = () => {
   };
 
   useEffect(() => {
-    fetchAllCards();
+    loadAllCards();
   }, []);
 
-  const fetchAllCards = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('https://bk-api.bankkaro.com/sp/api/cards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          slug: "",
-          banks_ids: [],
-          card_networks: [],
-          annualFees: "",
-          credit_score: "",
-          sort_by: "",
-          free_cards: "",
-          eligiblityPayload: {},
-          cardGeniusPayload: {}
-        }),
-      });
-      const data = await response.json();
-      setCards(data.cards || []);
-    } catch (error) {
+  const loadAllCards = async () => {
+    if (!canMakeRequest('calculator-cards')) {
       toast({
-        title: "Error",
-        description: "Failed to fetch cards. Please try again.",
+        title: "Rate Limited",
+        description: "Please wait before making more requests.",
         variant: "destructive",
       });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        slug: "",
+        banks_ids: [],
+        card_networks: [],
+        annualFees: "",
+        credit_score: "",
+        sort_by: "",
+        free_cards: "",
+        eligiblityPayload: {},
+        cardGeniusPayload: {}
+      };
+
+      const fetchedCards = await fetchCards(payload);
+      setCards(fetchedCards);
+    } catch (error) {
+      console.error('Error loading cards:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+    const validatedCategory = calculatorCategorySchema.safeParse(categoryId);
+    if (!validatedCategory.success) {
+      toast({
+        title: "Invalid Category",
+        description: "Please select a valid category.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedCategory(validatedCategory.data);
     setCurrentQuestionIndex(0);
     setResults(null);
-    const categoryQs = categoryQuestions[categoryId as keyof typeof categoryQuestions] || [];
+    const categoryQs = categoryQuestions[validatedCategory.data as keyof typeof categoryQuestions] || [];
     const initialQuestions = {};
     categoryQs.forEach(q => {
       initialQuestions[q.key] = [0];
@@ -135,10 +149,19 @@ const CalculatorPage = () => {
   };
 
   const handleQuestionAnswer = (key: string, value: number[]) => {
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+
+    const validatedValue = validateSpendingValue(value[0], currentQuestion.min, currentQuestion.max);
     setQuestions(prev => ({
       ...prev,
-      [key]: value
+      [key]: [validatedValue]
     }));
+  };
+
+  const getCurrentQuestion = () => {
+    const categoryQs = categoryQuestions[selectedCategory as keyof typeof categoryQuestions] || [];
+    return categoryQs[currentQuestionIndex];
   };
 
   const handleNext = () => {
@@ -157,38 +180,38 @@ const CalculatorPage = () => {
   };
 
   const calculateResults = async () => {
+    if (!canMakeRequest('calculator-results')) {
+      toast({
+        title: "Rate Limited",
+        description: "Please wait before calculating results.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
         ...Object.keys(questions).reduce((acc, key) => {
-          acc[key] = questions[key][0];
+          const value = questions[key][0];
+          acc[key] = typeof value === 'number' ? Math.max(0, value) : 0;
           return acc;
         }, {} as any),
         selected_card_id: null
       };
 
-      const response = await fetch('https://card-recommendation-api-v2.bankkaro.com/cg/api/pro', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      setResults(data);
+      const data = await fetchCalculatorResults(payload);
+      if (data) {
+        setResults(data);
+      }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to calculate results. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Calculation error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const currentQuestions = categoryQuestions[selectedCategory as keyof typeof categoryQuestions] || [];
-  const currentQuestion = currentQuestions[currentQuestionIndex];
+  const currentQuestion = getCurrentQuestion();
 
   return (
     <div className="min-h-screen bg-background">
@@ -225,7 +248,7 @@ const CalculatorPage = () => {
                   <SelectContent>
                     {cards.map((card) => (
                       <SelectItem key={card.id} value={card.id}>
-                        {card.name}
+                        {card.name || 'Unknown Card'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -297,7 +320,7 @@ const CalculatorPage = () => {
                       <CardTitle className="flex items-center justify-between">
                         <span>{currentQuestion.label}</span>
                         <span className="text-sm text-muted-foreground">
-                          {currentQuestionIndex + 1} of {currentQuestions.length}
+                          {currentQuestionIndex + 1} of {getCurrentCategoryQuestions().length}
                         </span>
                       </CardTitle>
                     </CardHeader>
@@ -328,7 +351,7 @@ const CalculatorPage = () => {
                           Previous
                         </Button>
                         <Button onClick={handleNext} disabled={loading}>
-                          {currentQuestionIndex === currentQuestions.length - 1 ? (
+                          {currentQuestionIndex === getCurrentCategoryQuestions().length - 1 ? (
                             loading ? "Calculating..." : "Calculate Results"
                           ) : (
                             <>
@@ -354,7 +377,7 @@ const CalculatorPage = () => {
                           Based on your spending patterns, here are your potential rewards:
                         </p>
                         <div className="bg-muted/30 p-4 rounded-lg">
-                          <pre className="text-sm">
+                          <pre className="text-sm whitespace-pre-wrap">
                             {JSON.stringify(results, null, 2)}
                           </pre>
                         </div>
@@ -364,6 +387,7 @@ const CalculatorPage = () => {
                             setSelectedCategory("");
                             setResults(null);
                             setCurrentQuestionIndex(0);
+                            setQuestions({});
                           }}
                         >
                           Try Another Category
@@ -379,6 +403,10 @@ const CalculatorPage = () => {
       </div>
     </div>
   );
+
+  function getCurrentCategoryQuestions() {
+    return categoryQuestions[selectedCategory as keyof typeof categoryQuestions] || [];
+  }
 };
 
 export default CalculatorPage;
