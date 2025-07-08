@@ -10,8 +10,6 @@ export const Navigation = () => {
   const navItems = [
     { path: "/", label: "Home", icon: CreditCard },
     { path: "/explore", label: "Explore Cards", icon: Search },
-    { path: "/calculator", label: "Calculator", icon: Calculator },
-    { path: "/genius", label: "Card Genius", icon: Zap },
   ];
 
   const isActive = (path: string) => location.pathname === path;

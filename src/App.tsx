@@ -9,6 +9,7 @@ import Explore from "./pages/Explore";
 import Calculator from "./pages/Calculator";
 import CardGenius from "./pages/CardGenius";
 import Compare from "./pages/Compare";
+import BeatMyCard from "./pages/BeatMyCard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/genius" element={<CardGenius />} />
           <Route path="/compare" element={<Compare />} />
+          <Route path="/beat-my-card" element={<BeatMyCard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

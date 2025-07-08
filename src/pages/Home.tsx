@@ -9,27 +9,43 @@ const Home = () => {
   const uspFeatures = [
     {
       icon: Brain,
-      title: "Smart AI Recommendations",
-      description: "Get personalized card suggestions based on your spending patterns and creator lifestyle",
+      title: "AI Assistant",
+      description: "Use AI assistant across the website and card level to improve decision making while buying cards",
       cta: "Try AI Assistant",
-      link: "/genius",
+      link: "/explore",
       color: "primary"
     },
     {
       icon: GitCompare,
-      title: "Compare Like a Pro",
-      description: "Side-by-side analysis of features, benefits, and spending-based calculations",
+      title: "Card Comparison",
+      description: "Compare between textual information and spend-based calculations with detailed analysis",
       cta: "Compare Cards",
       link: "/compare",
       color: "success"
     },
     {
       icon: Calculator,
-      title: "Maximize Your Rewards",
-      description: "Calculate potential earnings based on your actual spending categories",
+      title: "Reward Calculator",
+      description: "Choose a card and get category-specific questions for shopping, fuel, dining, utility etc.",
       cta: "Calculate Rewards",
       link: "/calculator",
       color: "accent"
+    },
+    {
+      icon: Sparkles,
+      title: "Card Genius",
+      description: "Answer 19 comprehensive questions to get personalized card recommendations",
+      cta: "Try Card Genius",
+      link: "/genius",
+      color: "primary"
+    },
+    {
+      icon: Trophy,
+      title: "Beat My Card",
+      description: "Choose your existing card and find out which card would save you more money",
+      cta: "Beat My Card",
+      link: "/beat-my-card",
+      color: "success"
     }
   ];
 
@@ -152,7 +168,7 @@ const Home = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {uspFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
