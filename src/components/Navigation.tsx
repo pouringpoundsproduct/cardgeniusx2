@@ -7,7 +7,10 @@ export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
-  // No navigation items needed - just logo
+  const navItems = [
+    { path: "/", label: "Home", icon: CreditCard },
+    { path: "/explore", label: "Explore Cards", icon: Search },
+  ];
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -24,9 +27,32 @@ export const Navigation = () => {
             <span>Uncredit</span>
           </Link>
 
-          {/* Desktop Navigation - Clean minimal */}
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {/* Empty - minimal navigation */}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    isActive(item.path)
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* CTA Button */}
+          <div className="hidden md:block">
+            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              Find Best Card
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -40,11 +66,33 @@ export const Navigation = () => {
           </Button>
         </div>
 
-        {/* Mobile Navigation - Minimal */}
+        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-4 animate-fade-in">
-            <div className="text-center text-muted-foreground">
-              Navigate by clicking the logo
+            <div className="flex flex-col space-y-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive(item.path)
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+              <div className="pt-4">
+                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  Find Best Card
+                </Button>
+              </div>
             </div>
           </div>
         )}

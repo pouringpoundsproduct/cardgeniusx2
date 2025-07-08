@@ -1,58 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, GitCompare, Calculator, Star, ArrowRight, Sparkles, Users, Trophy, TrendingUp, ShoppingBag, Plane, UtensilsCrossed, Fuel, ShoppingCart, Zap } from "lucide-react";
+import { Brain, GitCompare, Calculator, Star, ArrowRight, Sparkles, Users, Trophy, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-cards.jpg";
-import { useState, useEffect } from "react";
 
 const Home = () => {
-  const [categoryCards, setCategoryCards] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-
-  const fetchCategoryCards = async (slug: string) => {
-    try {
-      const response = await fetch('https://bk-api.bankkaro.com/sp/api/cards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          slug: slug,
-          banks_ids: [],
-          card_networks: [],
-          annualFees: "",
-          credit_score: "",
-          sort_by: "",
-          free_cards: "",
-          eligiblityPayload: {},
-          cardGeniusPayload: {}
-        }),
-      });
-      const data = await response.json();
-      return data.cards ? data.cards.slice(0, 5) : [];
-    } catch (error) {
-      console.error(`Error fetching ${slug} cards:`, error);
-      return [];
-    }
-  };
-
-  useEffect(() => {
-    const loadCategoryCards = async () => {
-      setLoading(true);
-      const cards: any = {};
-      
-      for (const category of featuredCategories) {
-        cards[category.slug] = await fetchCategoryCards(category.slug);
-      }
-      
-      setCategoryCards(cards);
-      setLoading(false);
-    };
-
-    loadCategoryCards();
-  }, []);
-
   const uspFeatures = [
     {
       icon: Brain,
@@ -97,12 +50,12 @@ const Home = () => {
   ];
 
   const featuredCategories = [
-    { name: "Shopping", slug: "best-shopping-credit-card", icon: ShoppingBag, color: "bg-blue-500" },
-    { name: "Travel", slug: "best-travel-credit-card", icon: Plane, color: "bg-green-500" },
-    { name: "Dining", slug: "best-dining-credit-card", icon: UtensilsCrossed, color: "bg-orange-500" },
-    { name: "Fuel", slug: "best-fuel-credit-card", icon: Fuel, color: "bg-purple-500" },
-    { name: "Grocery", slug: "BestCardsforGroceryShopping", icon: ShoppingCart, color: "bg-red-500" },
-    { name: "Utility", slug: "best-utility-credit-card", icon: Zap, color: "bg-indigo-500" }
+    { name: "Shopping", count: "25+", color: "bg-blue-500" },
+    { name: "Travel", count: "18+", color: "bg-green-500" },
+    { name: "Dining", count: "15+", color: "bg-orange-500" },
+    { name: "Fuel", count: "12+", color: "bg-purple-500" },
+    { name: "Grocery", count: "20+", color: "bg-red-500" },
+    { name: "Utility", count: "10+", color: "bg-indigo-500" }
   ];
 
   const testimonials = [
@@ -272,78 +225,23 @@ const Home = () => {
             </p>
           </div>
           
-          <div className="space-y-12">
-            {featuredCategories.map((category, index) => {
-              const Icon = category.icon;
-              const cards = categoryCards[category.slug] || [];
-              
-              return (
-                <div key={index} className="animate-fade-in" style={{animationDelay: `${index * 200}ms`}}>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 rounded-xl ${category.color} flex items-center justify-center`}>
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-semibold text-foreground">{category.name} Cards</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {featuredCategories.map((category, index) => (
+              <Link key={index} to="/explore">
+                <Card 
+                  className="group cursor-pointer hover-lift animate-bounce-in shadow-card border-0"
+                  style={{animationDelay: `${index * 100}ms`}}
+                >
+                  <CardContent className="p-6 text-center">
+                    <div className={`w-12 h-12 mx-auto mb-4 rounded-xl ${category.color} flex items-center justify-center`}>
+                      <TrendingUp className="h-6 w-6 text-white" />
                     </div>
-                    <Link to={`/explore?category=${category.slug}`}>
-                      <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
-                        View All
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                  
-                  {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                      {[...Array(5)].map((_, i) => (
-                        <Card key={i} className="animate-pulse">
-                          <CardContent className="p-6">
-                            <div className="h-32 bg-muted rounded mb-4"></div>
-                            <div className="h-4 bg-muted rounded mb-2"></div>
-                            <div className="h-4 bg-muted rounded w-2/3"></div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                      {cards.map((card: any, cardIndex: number) => (
-                        <Card 
-                          key={cardIndex} 
-                          className="group cursor-pointer hover-lift shadow-card border-0 bg-card/50 backdrop-blur-sm"
-                        >
-                          <CardContent className="p-4">
-                            {card.image && (
-                              <img 
-                                src={card.image} 
-                                alt={card.name}
-                                className="w-full h-32 object-contain rounded mb-3"
-                              />
-                            )}
-                            <h4 className="font-semibold text-foreground mb-2 text-sm leading-tight">
-                              {card.name}
-                            </h4>
-                            <div className="space-y-1">
-                              {card.annual_fee && (
-                                <p className="text-xs text-muted-foreground">
-                                  Annual Fee: ₹{card.annual_fee}
-                                </p>
-                              )}
-                              {card.reward_rate && (
-                                <p className="text-xs text-primary font-medium">
-                                  Up to {card.reward_rate}% rewards
-                                </p>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    <h3 className="font-semibold text-foreground mb-1">{category.name}</h3>
+                    <p className="text-sm text-muted-foreground">{category.count} cards</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
