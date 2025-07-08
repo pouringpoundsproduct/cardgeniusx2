@@ -1,7 +1,8 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, GitCompare, Calculator, Star, ArrowRight, Sparkles, Users, Trophy, TrendingUp } from "lucide-react";
+import { Brain, GitCompare, Calculator, Star, ArrowRight, Sparkles, Trophy, ShoppingBag, Plane, UtensilsCrossed, Fuel, ShoppingCart, Zap, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-cards.jpg";
 
@@ -49,14 +50,91 @@ const Home = () => {
     }
   ];
 
+  const [categoryCards, setCategoryCards] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+
   const featuredCategories = [
-    { name: "Shopping", count: "25+", color: "bg-blue-500" },
-    { name: "Travel", count: "18+", color: "bg-green-500" },
-    { name: "Dining", count: "15+", color: "bg-orange-500" },
-    { name: "Fuel", count: "12+", color: "bg-purple-500" },
-    { name: "Grocery", count: "20+", color: "bg-red-500" },
-    { name: "Utility", count: "10+", color: "bg-indigo-500" }
+    { 
+      name: "Shopping", 
+      slug: "best-shopping-credit-card", 
+      icon: ShoppingBag, 
+      color: "bg-blue-500",
+      cards: []
+    },
+    { 
+      name: "Travel", 
+      slug: "best-travel-credit-card", 
+      icon: Plane, 
+      color: "bg-green-500",
+      cards: []
+    },
+    { 
+      name: "Dining", 
+      slug: "best-dining-credit-card", 
+      icon: UtensilsCrossed, 
+      color: "bg-orange-500",
+      cards: []
+    },
+    { 
+      name: "Fuel", 
+      slug: "best-fuel-credit-card", 
+      icon: Fuel, 
+      color: "bg-purple-500",
+      cards: []
+    },
+    { 
+      name: "Grocery", 
+      slug: "BestCardsforGroceryShopping", 
+      icon: ShoppingCart, 
+      color: "bg-red-500",
+      cards: []
+    },
+    { 
+      name: "Utility", 
+      slug: "best-utility-credit-card", 
+      icon: Zap, 
+      color: "bg-indigo-500",
+      cards: []
+    }
   ];
+
+  useEffect(() => {
+    fetchCategoryCards();
+  }, []);
+
+  const fetchCategoryCards = async () => {
+    setLoading(true);
+    const categoryData = {};
+    
+    try {
+      for (const category of featuredCategories) {
+        const response = await fetch('https://bk-api.bankkaro.com/sp/api/cards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            slug: category.slug,
+            banks_ids: [],
+            card_networks: [],
+            annualFees: "",
+            credit_score: "",
+            sort_by: "",
+            free_cards: "",
+            eligiblityPayload: {},
+            cardGeniusPayload: {}
+          }),
+        });
+        const data = await response.json();
+        categoryData[category.slug] = data.cards?.slice(0, 5) || [];
+      }
+      setCategoryCards(categoryData);
+    } catch (error) {
+      console.error('Error fetching category cards:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const testimonials = [
     {
@@ -225,24 +303,89 @@ const Home = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {featuredCategories.map((category, index) => (
-              <Link key={index} to="/explore">
-                <Card 
-                  className="group cursor-pointer hover-lift animate-bounce-in shadow-card border-0"
-                  style={{animationDelay: `${index * 100}ms`}}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className={`w-12 h-12 mx-auto mb-4 rounded-xl ${category.color} flex items-center justify-center`}>
-                      <TrendingUp className="h-6 w-6 text-white" />
+          {loading ? (
+            <div className="text-center">
+              <div className="text-lg text-muted-foreground">Loading categories...</div>
+            </div>
+          ) : (
+            <div className="space-y-16">
+              {featuredCategories.map((category, categoryIndex) => {
+                const Icon = category.icon;
+                const cards = categoryCards[category.slug] || [];
+                
+                return (
+                  <div key={category.slug} className="space-y-6">
+                    {/* Category Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 rounded-xl ${category.color} flex items-center justify-center`}>
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-foreground">{category.name} Cards</h3>
+                      </div>
+                      <Link to={`/explore?category=${category.name}`}>
+                        <Button variant="outline" className="border-primary text-primary hover:bg-primary/5">
+                          View All
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
                     </div>
-                    <h3 className="font-semibold text-foreground mb-1">{category.name}</h3>
-                    <p className="text-sm text-muted-foreground">{category.count} cards</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+
+                    {/* Top 5 Cards */}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                      {cards.map((card: any, index: number) => (
+                        <Card 
+                          key={card.id} 
+                          className="hover-lift shadow-card animate-slide-up"
+                          style={{animationDelay: `${(categoryIndex * 100) + (index * 50)}ms`}}
+                        >
+                          <CardContent className="p-4">
+                            {/* Card Image */}
+                            <div className="relative mb-4">
+                              <div className="w-full h-24 bg-gradient-primary rounded-lg flex items-center justify-center">
+                                <CreditCard className="h-8 w-8 text-white" />
+                              </div>
+                              
+                              {/* Annual Fee Badge */}
+                              <Badge className="absolute -bottom-2 left-2 bg-white text-primary text-xs">
+                                {card.annual_fee ? `₹${card.annual_fee}` : 'Free'}
+                              </Badge>
+                            </div>
+
+                            {/* Card Info */}
+                            <div className="space-y-2">
+                              <div>
+                                <h4 className="font-semibold text-foreground text-sm leading-tight line-clamp-2">{card.name}</h4>
+                                <p className="text-xs text-muted-foreground">{card.bank_name}</p>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center">
+                                  <Star className="h-3 w-3 fill-accent text-accent mr-1" />
+                                  <span className="text-xs font-medium">{card.rating || '4.0'}</span>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">
+                                  {card.card_network}
+                                </Badge>
+                              </div>
+
+                              <div className="bg-accent/10 p-2 rounded-lg">
+                                <p className="text-xs font-medium text-accent line-clamp-2">{card.key_features?.[0] || 'Great rewards'}</p>
+                              </div>
+
+                              <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-xs">
+                                Apply Now
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

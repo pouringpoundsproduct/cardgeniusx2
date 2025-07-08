@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +9,25 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Filter, Heart, Plus, Star, CreditCard } from "lucide-react";
 
 const Explore = () => {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [comparison, setComparison] = useState<string[]>([]);
+  const [cards, setCards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set category from URL params if available
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+    fetchCards();
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetchCards();
+  }, [selectedCategory]);
 
   const categories = [
     "All Cards", "Shopping", "Travel", "Dining", "Fuel", "Grocery", "Utility", "Premium"
@@ -19,57 +36,48 @@ const Explore = () => {
   const networks = ["Visa", "Mastercard", "American Express", "RuPay"];
   const feeRanges = ["Free", "Under ₹1,000", "₹1,000-₹5,000", "₹5,000+"];
 
-  // Mock card data
-  const cards = [
-    {
-      id: "1",
-      name: "Amazon Pay ICICI Credit Card",
-      bank: "ICICI Bank",
-      image: "/placeholder-card.jpg",
-      annualFee: "Free",
-      network: "Visa",
-      rewards: "5% on Amazon",
-      rating: 4.5,
-      benefits: ["5% cashback on Amazon", "2% on bill payments", "1% everywhere else"],
-      category: "Shopping"
-    },
-    {
-      id: "2", 
-      name: "HDFC Regalia Credit Card",
-      bank: "HDFC Bank",
-      image: "/placeholder-card.jpg",
-      annualFee: "₹2,500",
-      network: "Visa",
-      rewards: "4 Reward Points per ₹150",
-      rating: 4.3,
-      benefits: ["Airport lounge access", "Air miles conversion", "Dining rewards"],
-      category: "Travel"
-    },
-    {
-      id: "3",
-      name: "SBI SimplyCLICK Credit Card",
-      bank: "SBI",
-      image: "/placeholder-card.jpg",
-      annualFee: "₹499",
-      network: "Visa",
-      rewards: "10X on online spends",
-      rating: 4.1,
-      benefits: ["10X rewards online", "5X on dining", "1X on other spends"],
-      category: "Dining"
-    },
-    {
-      id: "4",
-      name: "Axis Bank Neo Credit Card",
-      bank: "Axis Bank",
-      image: "/placeholder-card.jpg",
-      annualFee: "Free",
-      network: "Visa",
-      rewards: "Unlimited cashback",
-      rating: 4.4,
-      benefits: ["No annual fee", "Contactless payments", "Easy approval"],
-      category: "Shopping"
+  const categorySlugMap = {
+    "Shopping": "best-shopping-credit-card",
+    "Travel": "best-travel-credit-card", 
+    "Dining": "best-dining-credit-card",
+    "Fuel": "best-fuel-credit-card",
+    "Grocery": "BestCardsforGroceryShopping",
+    "Utility": "best-utility-credit-card"
+  };
+
+  const fetchCards = async () => {
+    setLoading(true);
+    try {
+      const slug = selectedCategory && selectedCategory !== "All Cards" 
+        ? categorySlugMap[selectedCategory as keyof typeof categorySlugMap] || ""
+        : "";
+
+      const response = await fetch('https://bk-api.bankkaro.com/sp/api/cards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          slug,
+          banks_ids: [],
+          card_networks: [],
+          annualFees: "",
+          credit_score: "",
+          sort_by: "",
+          free_cards: "",
+          eligiblityPayload: {},
+          cardGeniusPayload: {}
+        }),
+      });
+      const data = await response.json();
+      setCards(data.cards || []);
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+      setCards([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const addToComparison = (cardId: string) => {
     if (comparison.includes(cardId)) {
@@ -80,10 +88,9 @@ const Explore = () => {
   };
 
   const filteredCards = cards.filter(card => {
-    const matchesSearch = card.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         card.bank.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || selectedCategory === "All Cards" || card.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSearch = card.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         card.bank_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   return (
@@ -187,7 +194,8 @@ const Explore = () => {
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                Showing {filteredCards.length} of {cards.length} cards
+                {loading ? "Loading..." : `Showing ${filteredCards.length} cards`}
+                {selectedCategory && selectedCategory !== "All Cards" && ` in ${selectedCategory}`}
               </p>
               <Select defaultValue="recommended">
                 <SelectTrigger className="w-48">
@@ -219,85 +227,102 @@ const Explore = () => {
             )}
 
             {/* Cards Grid */}
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCards.map((card, index) => (
-                <Card 
-                  key={card.id} 
-                  className="hover-lift shadow-card animate-slide-up"
-                  style={{animationDelay: `${index * 100}ms`}}
-                >
-                  <CardContent className="p-6">
-                    {/* Card Image */}
-                    <div className="relative mb-4">
-                      <div className="w-full h-32 bg-gradient-primary rounded-lg flex items-center justify-center">
-                        <CreditCard className="h-12 w-12 text-white" />
+            {loading ? (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <Card key={index} className="shadow-card">
+                    <CardContent className="p-6">
+                      <div className="animate-pulse">
+                        <div className="w-full h-32 bg-muted rounded-lg mb-4"></div>
+                        <div className="h-4 bg-muted rounded mb-2"></div>
+                        <div className="h-3 bg-muted rounded mb-4"></div>
+                        <div className="h-8 bg-muted rounded"></div>
                       </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="absolute top-2 right-2 flex space-x-2">
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="h-8 w-8 bg-white/90 hover:bg-white"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className={`h-8 w-8 ${
-                            comparison.includes(card.id) 
-                              ? 'bg-primary text-white hover:bg-primary/90' 
-                              : 'bg-white/90 hover:bg-white'
-                          }`}
-                          onClick={() => addToComparison(card.id)}
-                          disabled={!comparison.includes(card.id) && comparison.length >= 3}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      
-                      {/* Annual Fee Badge */}
-                      <Badge className="absolute bottom-2 left-2 bg-white text-primary">
-                        {card.annualFee}
-                      </Badge>
-                    </div>
-
-                    {/* Card Info */}
-                    <div className="space-y-3">
-                      <div>
-                        <h3 className="font-semibold text-foreground text-lg">{card.name}</h3>
-                        <p className="text-sm text-muted-foreground">{card.bank}</p>
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <div className="flex items-center">
-                          <Star className="h-4 w-4 fill-accent text-accent mr-1" />
-                          <span className="text-sm font-medium">{card.rating}</span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredCards.map((card, index) => (
+                  <Card 
+                    key={card.id} 
+                    className="hover-lift shadow-card animate-slide-up"
+                    style={{animationDelay: `${index * 100}ms`}}
+                  >
+                    <CardContent className="p-6">
+                      {/* Card Image */}
+                      <div className="relative mb-4">
+                        <div className="w-full h-32 bg-gradient-primary rounded-lg flex items-center justify-center">
+                          <CreditCard className="h-12 w-12 text-white" />
                         </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {card.network}
+                        
+                        {/* Action Buttons */}
+                        <div className="absolute top-2 right-2 flex space-x-2">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 bg-white/90 hover:bg-white"
+                          >
+                            <Heart className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className={`h-8 w-8 ${
+                              comparison.includes(card.id) 
+                                ? 'bg-primary text-white hover:bg-primary/90' 
+                                : 'bg-white/90 hover:bg-white'
+                            }`}
+                            onClick={() => addToComparison(card.id)}
+                            disabled={!comparison.includes(card.id) && comparison.length >= 3}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Annual Fee Badge */}
+                        <Badge className="absolute bottom-2 left-2 bg-white text-primary">
+                          {card.annual_fee ? `₹${card.annual_fee}` : 'Free'}
                         </Badge>
                       </div>
 
-                      <div className="bg-accent/10 p-3 rounded-lg">
-                        <p className="text-sm font-medium text-accent">{card.rewards}</p>
-                      </div>
+                      {/* Card Info */}
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-foreground text-lg">{card.name}</h3>
+                          <p className="text-sm text-muted-foreground">{card.bank_name}</p>
+                        </div>
 
-                      <div className="space-y-1">
-                        {card.benefits.slice(0, 2).map((benefit, idx) => (
-                          <p key={idx} className="text-xs text-muted-foreground">• {benefit}</p>
-                        ))}
-                      </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
+                            <Star className="h-4 w-4 fill-accent text-accent mr-1" />
+                            <span className="text-sm font-medium">{card.rating || '4.0'}</span>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {card.card_network}
+                          </Badge>
+                        </div>
 
-                      <Button className="w-full bg-primary hover:bg-primary/90">
-                        Apply Now
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        <div className="bg-accent/10 p-3 rounded-lg">
+                          <p className="text-sm font-medium text-accent">{card.key_features?.[0] || 'Great rewards'}</p>
+                        </div>
+
+                        <div className="space-y-1">
+                          {card.key_features?.slice(0, 2).map((benefit: string, idx: number) => (
+                            <p key={idx} className="text-xs text-muted-foreground">• {benefit}</p>
+                          ))}
+                        </div>
+
+                        <Button className="w-full bg-primary hover:bg-primary/90">
+                          Apply Now
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
             {/* Load More */}
             <div className="text-center mt-12">
