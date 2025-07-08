@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
+import AllCards from "./pages/AllCards";
+import CardDetail from "./pages/CardDetail";
 import Calculator from "./pages/Calculator";
 import CardGenius from "./pages/CardGenius";
 import Compare from "./pages/Compare";
@@ -24,6 +27,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/all-cards" element={<AllCards />} />
+          <Route path="/card/:id" element={<CardDetail />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/genius" element={<CardGenius />} />
           <Route path="/compare" element={<Compare />} />

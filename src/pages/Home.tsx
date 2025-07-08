@@ -10,7 +10,7 @@ const Home = () => {
   const uspFeatures = [
     {
       icon: Brain,
-      title: "AI Assistant",
+      title: "AI Assistant", 
       description: "Use AI assistant across the website and card level to improve decision making while buying cards",
       cta: "Try AI Assistant",
       link: "/explore",
@@ -21,7 +21,7 @@ const Home = () => {
       title: "Card Comparison",
       description: "Compare between textual information and spend-based calculations with detailed analysis",
       cta: "Compare Cards",
-      link: "/compare",
+      link: "/compare", 
       color: "success"
     },
     {
@@ -146,7 +146,7 @@ const Home = () => {
     },
     {
       name: "Rahul Kumar",
-      role: "Instagram Influencer",
+      role: "Instagram Influencer", 
       content: "The spending calculator helped me realize I was missing out on so many rewards. Game changer!",
       rating: 5,
       avatar: "RK"
@@ -171,7 +171,7 @@ const Home = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-hero">
-        <div className="container mx-auto px-4 py-20 lg:py-32">
+        <div className="container mx-auto px-4 py-12 lg:py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8 animate-fade-in">
               <div className="space-y-4">
@@ -186,7 +186,7 @@ const Home = () => {
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-lg">
                   AI-powered recommendations tailored for content creators. 
-                  Compare cards, calculate rewards, and optimize your spending like never before.
+                  Compare cards, calculate rewards, and optimize your spending.
                 </p>
               </div>
               
@@ -196,7 +196,7 @@ const Home = () => {
                   className="bg-primary hover:bg-primary/90 text-primary-foreground group"
                   asChild
                 >
-                  <Link to="/explore">
+                  <Link to="/all-cards">
                     Find the Best Card
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
@@ -235,7 +235,7 @@ const Home = () => {
       </section>
 
       {/* USP Features Section */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -292,7 +292,7 @@ const Home = () => {
       </section>
 
       {/* Featured Categories */}
-      <section className="py-20">
+      <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -390,7 +390,7 @@ const Home = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16 animate-fade-in">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
@@ -432,7 +432,7 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-primary text-white">
+      <section className="py-16 bg-gradient-primary text-white">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto animate-fade-in">
             <h2 className="text-3xl lg:text-5xl font-bold mb-6">
