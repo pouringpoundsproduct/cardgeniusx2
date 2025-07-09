@@ -182,9 +182,15 @@ All colors MUST be HSL.
     animation: floating 3s ease-in-out infinite;
   }
   
-  .floating-delayed {
-    animation: floating 3s ease-in-out infinite;
-    animation-delay: -1.5s;
+  
+  /* Scrollbar Hide */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 
