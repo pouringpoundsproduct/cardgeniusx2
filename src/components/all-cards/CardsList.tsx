@@ -11,12 +11,19 @@ interface CardsListProps {
 
 export const CardsList = ({ cards, loading, onAskAI }: CardsListProps) => {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       {/* Results Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <p className="text-muted-foreground">
           {loading ? "Loading..." : `Showing ${cards.length} cards`}
         </p>
+        
+        {/* Check Eligibility Filter */}
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5">
+            Check Eligibility
+          </Button>
+        </div>
       </div>
 
       {/* Cards List */}
